@@ -24,10 +24,6 @@ export class TriangleEnemy extends Enemy {
         this.armPhase = 0;
         this.animationSpeed = 10;
         this.squashStretch = 1.0; // For squash and stretch effect
-
-        // Debug logging
-        this.debugFrameCount = 0;
-        console.log(`[TriangleEnemy] Created at (${x}, ${y}), jumpInterval: ${this.jumpInterval}ms`);
     }
 
     getRandomJumpInterval() {
@@ -43,7 +39,6 @@ export class TriangleEnemy extends Enemy {
     }
 
     performMiniJump() {
-        console.log(`[TriangleEnemy] performMiniJump called - isGrounded: ${this.isGrounded}, onGround: ${this.onGround}`);
         if (this.isGrounded) {
             const jumpForce = this.getRandomJumpForce();
             this.velocityY = jumpForce;
@@ -51,9 +46,6 @@ export class TriangleEnemy extends Enemy {
             this.jumpTimer = 0;
             this.jumpInterval = this.getRandomJumpInterval();
             this.squashStretch = 1.3; // Stretch when jumping
-            console.log(`[TriangleEnemy] ✓ JUMP EXECUTED! velocityY: ${jumpForce}, next interval: ${this.jumpInterval}ms`);
-        } else {
-            console.log(`[TriangleEnemy] ✗ JUMP BLOCKED - isGrounded: ${this.isGrounded}, onGround: ${this.onGround}`);
         }
     }
 
@@ -64,12 +56,6 @@ export class TriangleEnemy extends Enemy {
         const wasOnGroundLastFrame = this.onGround;
 
         this.updateBase();
-
-        // Debug logging every 60 frames (approximately 1 second)
-        this.debugFrameCount++;
-        if (this.debugFrameCount % 60 === 0) {
-            console.log(`[TriangleEnemy Debug] Frame: ${this.debugFrameCount}, wasOnGround: ${wasOnGroundLastFrame}, onGround: ${this.onGround}, isGrounded: ${this.isGrounded}, velocityY: ${this.velocityY.toFixed(2)}, jumpTimer: ${this.jumpTimer.toFixed(0)}ms / ${this.jumpInterval.toFixed(0)}ms, y: ${this.y.toFixed(1)}`);
-        }
 
         // Update animations
         this.updateAnimations(deltaTime);
@@ -88,9 +74,6 @@ export class TriangleEnemy extends Enemy {
         if (wasOnGroundLastFrame && this.velocityY >= 0) {
             this.isGrounded = true;
             this.squashStretch = 0.85; // Squash when landing
-            if (this.debugFrameCount % 60 === 0) {
-                console.log(`[TriangleEnemy] Set isGrounded = true (was grounded & velocityY >= 0)`);
-            }
         } else {
             this.isGrounded = false;
         }
@@ -102,12 +85,7 @@ export class TriangleEnemy extends Enemy {
         if (this.isGrounded) {
             this.jumpTimer += deltaTime * 1000;
             if (this.jumpTimer >= this.jumpInterval) {
-                console.log(`[TriangleEnemy] Jump timer reached! ${this.jumpTimer.toFixed(0)} >= ${this.jumpInterval.toFixed(0)}`);
                 this.performMiniJump();
-            }
-        } else {
-            if (this.debugFrameCount % 60 === 0) {
-                console.log(`[TriangleEnemy] NOT grounded, jump timer paused at ${this.jumpTimer.toFixed(0)}ms`);
             }
         }
 

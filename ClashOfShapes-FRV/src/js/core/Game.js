@@ -15,6 +15,7 @@ import { TextEffect } from '../systems/TextEffect.js';
 import { Level } from '../level/Level.js';
 import { UIManager } from '../ui/UIManager.js';
 import { AudioManager } from '../systems/AudioManager.js';
+import { InstructionsScreen } from '../ui/InstructionsScreen.js';
 
 export class Game {
     constructor(gameCanvas, uiCanvas) {
@@ -56,6 +57,10 @@ export class Game {
         this.textEffects = [];
         this.uiManager = new UIManager(uiCanvas);
         this.audioManager = new AudioManager();
+        this.instructionsScreen = new InstructionsScreen();
+
+        // Show instructions at startup
+        this.instructionsScreen.show();
 
         // Initialize player
         this.initGame();
@@ -134,10 +139,36 @@ export class Game {
     }
 
     update(deltaTime) {
-        // Handle pause toggle
+        // Update instructions screen
+        this.instructionsScreen.update(deltaTime);
+
+        // Handle instructions toggle (I key or ESC when instructions are showing)
+        if (this.input.isKeyPressed('i')) {
+            this.instructionsScreen.toggle();
+            this.input.resetKey('i');
+            if (this.instructionsScreen.visible) {
+                this.state.paused = true;
+            } else {
+                this.state.paused = false;
+            }
+        }
+
+        // Handle ESC - close instructions if visible, otherwise pause
         if (this.input.isKeyPressed('escape')) {
-            this.state.paused = !this.state.paused;
+            if (this.instructionsScreen.visible) {
+                this.instructionsScreen.hide();
+                this.state.paused = false;
+            } else {
+                this.state.paused = !this.state.paused;
+            }
             this.input.resetKey('escape');
+        }
+
+        // Handle SPACE to start playing (close instructions)
+        if (this.instructionsScreen.visible && this.input.isKeyPressed(' ')) {
+            this.instructionsScreen.hide();
+            this.state.paused = false;
+            this.input.resetKey(' ');
         }
 
         // Handle restart (R key)
@@ -147,8 +178,8 @@ export class Game {
             return;
         }
 
-        // Don't update if paused or game over
-        if (this.state.paused || this.state.gameOver || this.state.levelComplete) {
+        // Don't update if paused, game over, or instructions showing
+        if (this.state.paused || this.state.gameOver || this.state.levelComplete || this.instructionsScreen.visible) {
             return;
         }
 
@@ -345,6 +376,11 @@ export class Game {
         if (this.state.levelComplete) {
             this.renderLevelCompleteScreen();
         }
+
+        // Render instructions screen (on top of everything)
+        if (this.instructionsScreen) {
+            this.instructionsScreen.render(this.uiCtx, this.uiCanvas);
+        }
     }
 
     renderPauseScreen() {
@@ -358,10 +394,14 @@ export class Game {
         this.uiCtx.fillStyle = '#FFFFFF';
         this.uiCtx.font = 'bold 40px Arial';
         this.uiCtx.textAlign = 'center';
-        this.uiCtx.fillText('PAUSED', this.uiCanvas.width / 2, this.uiCanvas.height / 2 - 20);
+        this.uiCtx.fillText('PAUSED', this.uiCanvas.width / 2, this.uiCanvas.height / 2 - 40);
 
         this.uiCtx.font = '20px Arial';
-        this.uiCtx.fillText('Press ESC to resume', this.uiCanvas.width / 2, this.uiCanvas.height / 2 + 20);
+        this.uiCtx.fillText('Press ESC to resume', this.uiCanvas.width / 2, this.uiCanvas.height / 2);
+
+        this.uiCtx.font = '18px Arial';
+        this.uiCtx.fillStyle = '#4ECDC4';
+        this.uiCtx.fillText('Press I for instructions', this.uiCanvas.width / 2, this.uiCanvas.height / 2 + 30);
 
         this.uiCtx.restore();
     }
