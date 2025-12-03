@@ -17,13 +17,18 @@ export const CONFIG = {
     PLAYER: {
         WALK_SPEED: 120,
         RUN_SPEED: 180,
-        JUMP_IMPULSE: -420,
+        JUMP_IMPULSE: -630,                // Increased by 50% from -420 for higher jumps
         FRICTION: 0.8,
         SIZE: 32,
         START_X: 100,
         START_Y: 400,
         START_SHAPE: 'square',
-        COLOR: '#4A90E2'
+        COLOR: '#4A90E2',
+        // Enhanced jump mechanics
+        MIN_JUMP_HEIGHT_MULTIPLIER: 0.4,  // Minimum jump is 40% of full jump
+        JUMP_HOLD_DURATION: 0.2,           // How long holding affects jump (200ms)
+        COYOTE_TIME: 0.1,                  // 100ms grace period after leaving ground
+        JUMP_BUFFER_TIME: 0.1              // 100ms buffer window for early jump press
     },
 
     // Enemy settings

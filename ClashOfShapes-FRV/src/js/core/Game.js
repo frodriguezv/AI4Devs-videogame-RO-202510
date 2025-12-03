@@ -136,6 +136,9 @@ export class Game {
         if (this.player) {
             this.player.update(deltaTime, this.input);
 
+            // Reset onGround before collision detection
+            this.player.onGround = false;
+
             // Check collisions with tiles
             for (const tile of this.tiles) {
                 if (CollisionSystem.checkCollision(this.player, tile)) {

@@ -13,6 +13,13 @@ export class Player extends Entity {
         this.invulnerable = false;
         this.invulnerabilityTimer = 0;
         this.particleSystem = particleSystem; // Reference to particle system
+
+        // Enhanced jump mechanics properties
+        this.jumping = false;              // For variable jump height
+        this.jumpHoldTime = 0;             // For variable jump height
+        this.coyoteTimer = 0;              // For coyote time
+        this.wasOnGround = false;          // For coyote time
+        this.jumpBufferTimer = 0;          // For jump buffer
     }
 
     cycleShapeForward() {
@@ -42,7 +49,7 @@ export class Player extends Entity {
     }
 
     update(deltaTime, input) {
-        this.updateBase();
+        // Note: Don't call updateBase() here - let collision system manage onGround state
 
         // Shape morphing (Q and E keys)
         if (input.isKeyPressed('q')) {
@@ -80,15 +87,89 @@ export class Player extends Entity {
         // Update horizontal position
         this.x += this.velocityX * deltaTime;
 
-        // Jump (only when on ground)
-        if ((input.isKeyPressed('arrowup') || input.isKeyPressed('w') ||
-             input.isKeyPressed('z') || input.isKeyPressed(' ')) && this.onGround) {
-            this.velocityY = CONFIG.PLAYER.JUMP_IMPULSE; // Jump impulse
-            // Reset keys to prevent continuous jumping
-            input.resetKey('arrowup');
-            input.resetKey('w');
-            input.resetKey('z');
-            input.resetKey(' ');
+        // === ENHANCED JUMP MECHANICS ===
+
+        // 1. Track coyote time (grace period after leaving ground)
+        if (this.onGround) {
+            this.coyoteTimer = CONFIG.PLAYER.COYOTE_TIME;
+            this.wasOnGround = true;
+        } else if (this.wasOnGround && this.coyoteTimer > 0) {
+            this.coyoteTimer -= deltaTime;
+            if (this.coyoteTimer <= 0) {
+                this.wasOnGround = false;
+            }
+        }
+
+        // 2. Detect jump input
+        const jumpKeys = ['arrowup', 'w', 'z', ' '];
+        const jumpPressed = jumpKeys.some(key => input.isKeyPressed(key));
+
+        // DEBUG: Log when any jump key is pressed
+        if (jumpPressed) {
+            const pressedKeys = jumpKeys.filter(key => input.isKeyPressed(key));
+            console.log(`[JUMP DEBUG] Keys pressed: ${pressedKeys.join(', ')}`);
+        }
+
+        // 3. Update jump buffer timer
+        if (this.jumpBufferTimer > 0) {
+            this.jumpBufferTimer -= deltaTime;
+        }
+
+        // 4. Set jump buffer when jump key is pressed (and not already buffered)
+        if (jumpPressed && !this.jumping && this.jumpBufferTimer <= 0) {
+            this.jumpBufferTimer = CONFIG.PLAYER.JUMP_BUFFER_TIME;
+            console.log(`[JUMP DEBUG] Buffer set: ${this.jumpBufferTimer.toFixed(3)}s`);
+        }
+
+        // 5. Check if player can jump (on ground or coyote time active)
+        const canJump = this.onGround || (this.coyoteTimer > 0 && this.wasOnGround);
+
+        // DEBUG: Log jump conditions
+        if (jumpPressed || this.jumpBufferTimer > 0) {
+            console.log(`[JUMP DEBUG] onGround: ${this.onGround}, jumping: ${this.jumping}, buffer: ${this.jumpBufferTimer.toFixed(3)}, canJump: ${canJump}, coyoteTimer: ${this.coyoteTimer.toFixed(3)}`);
+        }
+
+        // 6. Start jump (with buffered input)
+        if (this.jumpBufferTimer > 0 && canJump && !this.jumping) {
+            this.velocityY = CONFIG.PLAYER.JUMP_IMPULSE;
+            this.jumping = true;
+            this.jumpHoldTime = 0;
+            this.jumpBufferTimer = 0;
+            this.coyoteTimer = 0;
+            this.wasOnGround = false;
+            console.log(`[JUMP DEBUG] ✓ JUMP STARTED! velocityY: ${this.velocityY}`);
+        }
+
+        // 7. Variable jump height - continue jump while holding
+        if (this.jumping && jumpPressed && this.jumpHoldTime < CONFIG.PLAYER.JUMP_HOLD_DURATION) {
+            this.jumpHoldTime += deltaTime;
+            // Apply upward force while holding
+            this.velocityY += CONFIG.PLAYER.JUMP_IMPULSE * 0.15 * deltaTime;
+            console.log(`[JUMP DEBUG] Holding jump: holdTime=${this.jumpHoldTime.toFixed(3)}s, velocityY=${this.velocityY.toFixed(1)}`);
+        }
+
+        // 8. Variable jump height - release jump early
+        if (this.jumping && !jumpPressed) {
+            // Apply minimum jump height multiplier
+            if (this.velocityY < 0) {
+                const oldVelocity = this.velocityY;
+                this.velocityY *= CONFIG.PLAYER.MIN_JUMP_HEIGHT_MULTIPLIER;
+                console.log(`[JUMP DEBUG] Jump released early: ${oldVelocity.toFixed(1)} → ${this.velocityY.toFixed(1)}`);
+            }
+            this.jumping = false;
+        }
+
+        // 9. Stop jump when landing
+        if (this.onGround && this.jumping) {
+            this.jumping = false;
+            this.jumpHoldTime = 0;
+            console.log(`[JUMP DEBUG] Landed - jump state reset`);
+        }
+
+        // 10. Reset jump keys only when on ground to prevent continuous jumping
+        if (this.onGround && jumpPressed) {
+            console.log(`[JUMP DEBUG] Resetting jump keys (on ground)`);
+            jumpKeys.forEach(key => input.resetKey(key));
         }
 
         // Apply gravity
