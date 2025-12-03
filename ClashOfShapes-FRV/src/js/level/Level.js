@@ -9,6 +9,16 @@ import { Checkpoint } from '../objects/Checkpoint.js';
 import { Goal } from '../objects/Goal.js';
 
 export class Level {
+    // Helper function to generate truly random position within a screen area
+    static randomizePosition(minX, maxX, minY, maxY) {
+        const randomX = minX + Math.random() * (maxX - minX);
+        const randomY = minY + Math.random() * (maxY - minY);
+        return {
+            x: Math.max(0, Math.min(randomX, CONFIG.LEVEL_WIDTH - 32)),
+            y: Math.max(50, Math.min(randomY, CONFIG.LEVEL_HEIGHT - 100))
+        };
+    }
+
     static init() {
         const tiles = [];
         const enemiesData = [];
@@ -63,15 +73,18 @@ export class Level {
             tiles.push(new GroundTile(x, 300, 16, 16));
         }
 
-        // Enemies for Screen 1 (3 total)
-        // 1 Circle enemy (Rock, 60 px/s) - on ground
-        enemiesData.push({ x: 200, y: 500, shape: 'circle' });
+        // Enemies for Screen 1 (3 total) - Random positions across screen 1 (0-800px)
+        // 1 Circle enemy (Rock, 60 px/s)
+        let pos = Level.randomizePosition(100, 750, 200, 500);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'circle' });
 
-        // 1 Square enemy (Paper, 50 px/s) - on first platform
-        enemiesData.push({ x: 350, y: 400, shape: 'square' });
+        // 1 Square enemy (Paper, 50 px/s)
+        pos = Level.randomizePosition(100, 750, 150, 450);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'square' });
 
-        // 1 Triangle enemy (Scissors, 70 px/s) - on elevated platform
-        enemiesData.push({ x: 600, y: 300, shape: 'triangle' });
+        // 1 Triangle enemy (Scissors, 70 px/s)
+        pos = Level.randomizePosition(100, 750, 200, 500);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'triangle' });
     }
 
     static buildScreen2(tiles, enemiesData) {
@@ -97,16 +110,20 @@ export class Level {
             tiles.push(new GroundTile(x, 450, 16, 16));
         }
 
-        // Enemies for Screen 2 (4 total)
+        // Enemies for Screen 2 (4 total) - Random positions across screen 2 (800-1600px)
         // 2 Circle enemies (Rock)
-        enemiesData.push({ x: 900, y: 400, shape: 'circle' });
-        enemiesData.push({ x: 1300, y: 300, shape: 'circle' });
+        let pos = Level.randomizePosition(820, 1580, 200, 500);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'circle' });
+        pos = Level.randomizePosition(820, 1580, 200, 500);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'circle' });
 
         // 1 Square enemy (Paper)
-        enemiesData.push({ x: 1100, y: 350, shape: 'square' });
+        pos = Level.randomizePosition(820, 1580, 150, 450);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'square' });
 
         // 1 Triangle enemy (Scissors)
-        enemiesData.push({ x: 1500, y: 400, shape: 'triangle' });
+        pos = Level.randomizePosition(820, 1580, 200, 500);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'triangle' });
     }
 
     static buildScreen3(tiles, enemiesData) {
@@ -132,13 +149,18 @@ export class Level {
             tiles.push(new GroundTile(x, 300, 16, 16));
         }
 
-        // Enemies for Screen 3 (3 total - adjusted to match PRD's 10 total)
-        // Upper platform enemies
-        enemiesData.push({ x: 1700, y: 300, shape: 'triangle' });
-        enemiesData.push({ x: 1800, y: 300, shape: 'square' });
+        // Enemies for Screen 3 (3 total) - Random positions across screen 3 (1600-2400px)
+        // Triangle enemy
+        let pos = Level.randomizePosition(1620, 2350, 200, 500);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'triangle' });
 
-        // Lower ground enemy
-        enemiesData.push({ x: 2000, y: 400, shape: 'circle' });
+        // Square enemy
+        pos = Level.randomizePosition(1620, 2350, 150, 450);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'square' });
+
+        // Circle enemy
+        pos = Level.randomizePosition(1620, 2350, 200, 500);
+        enemiesData.push({ x: pos.x, y: pos.y, shape: 'circle' });
     }
 
     static placeCollectibles(collectibles) {

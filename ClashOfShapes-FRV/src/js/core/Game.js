@@ -5,12 +5,16 @@ import { InputManager } from './InputManager.js';
 import { Camera } from './Camera.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
+import { SquareEnemy } from '../entities/SquareEnemy.js';
+import { CircleEnemy } from '../entities/CircleEnemy.js';
+import { TriangleEnemy } from '../entities/TriangleEnemy.js';
 import { GroundTile } from '../objects/GroundTile.js';
 import { CollisionSystem } from '../systems/CollisionSystem.js';
 import { ParticleSystem } from '../systems/ParticleSystem.js';
 import { TextEffect } from '../systems/TextEffect.js';
 import { Level } from '../level/Level.js';
 import { UIManager } from '../ui/UIManager.js';
+import { AudioManager } from '../systems/AudioManager.js';
 
 export class Game {
     constructor(gameCanvas, uiCanvas) {
@@ -51,6 +55,7 @@ export class Game {
         this.camera = new Camera(CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
         this.textEffects = [];
         this.uiManager = new UIManager(uiCanvas);
+        this.audioManager = new AudioManager();
 
         // Initialize player
         this.initGame();
@@ -59,8 +64,8 @@ export class Game {
     }
 
     initGame() {
-        // Create player at starting position (pass particle system reference)
-        this.player = new Player(CONFIG.PLAYER.START_X, CONFIG.PLAYER.START_Y, this.particleSystem);
+        // Create player at starting position (pass particle system and audio manager references)
+        this.player = new Player(CONFIG.PLAYER.START_X, CONFIG.PLAYER.START_Y, this.particleSystem, this.audioManager);
 
         // Initialize complete level using Level class
         const levelData = Level.init();
@@ -70,10 +75,21 @@ export class Game {
         this.checkpoint = levelData.checkpoint;
         this.goal = levelData.goal;
 
-        // Create enemies from level data
+        // Create enemies from level data with specific enemy types
         this.enemies = [];
         for (const enemyData of levelData.enemiesData) {
-            this.enemies.push(new Enemy(enemyData.x, enemyData.y, enemyData.shape));
+            let enemy;
+            if (enemyData.shape === 'square') {
+                enemy = new SquareEnemy(enemyData.x, enemyData.y, this.player);
+            } else if (enemyData.shape === 'circle') {
+                enemy = new CircleEnemy(enemyData.x, enemyData.y);
+            } else if (enemyData.shape === 'triangle') {
+                enemy = new TriangleEnemy(enemyData.x, enemyData.y);
+            } else {
+                // Fallback to base Enemy class for unknown shapes
+                enemy = new Enemy(enemyData.x, enemyData.y, enemyData.shape);
+            }
+            this.enemies.push(enemy);
         }
 
         console.log('Game initialized - Player at', CONFIG.PLAYER.START_X, CONFIG.PLAYER.START_Y);
@@ -82,8 +98,12 @@ export class Game {
         console.log('Placed', this.collectibles.length, 'collectibles');
     }
 
-    start() {
+    async start() {
         console.log('Game starting...');
+
+        // Initialize audio manager
+        await this.audioManager.init();
+
         requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
     }
 
@@ -149,12 +169,19 @@ export class Game {
 
         // Update enemies
         for (const enemy of this.enemies) {
-            enemy.update(deltaTime);
+            // Pass player reference for SquareEnemy (flying enemy)
+            if (enemy instanceof SquareEnemy) {
+                enemy.update(deltaTime, this.player);
+            } else {
+                enemy.update(deltaTime);
+            }
 
-            // Check enemy collisions with tiles
-            for (const tile of this.tiles) {
-                if (CollisionSystem.checkCollision(enemy, tile)) {
-                    CollisionSystem.resolveCollision(enemy, tile);
+            // Check enemy collisions with tiles (except for flying enemies)
+            if (!enemy.canFly) {
+                for (const tile of this.tiles) {
+                    if (CollisionSystem.checkCollision(enemy, tile)) {
+                        CollisionSystem.resolveCollision(enemy, tile);
+                    }
                 }
             }
         }
@@ -201,6 +228,7 @@ export class Game {
         if (this.checkpoint && this.player && CollisionSystem.checkCollision(this.player, this.checkpoint)) {
             const activated = this.checkpoint.activate();
             if (activated) {
+                this.audioManager.play('checkpoint');
                 this.spawnPoint = { x: this.checkpoint.x, y: this.checkpoint.y };
                 this.textEffects.push(new TextEffect(
                     this.checkpoint.x + 16,
@@ -423,6 +451,9 @@ export class Game {
             enemy.alive = false;
             this.state.score += CONFIG.COMBAT.SCORE_ENEMY_DEFEAT;
 
+            // Play POW sound
+            this.audioManager.play('pow');
+
             // Text effects
             this.textEffects.push(new TextEffect(enemy.x + 16, enemy.y + 16, 'POW!', COLORS.TEXT_POW, 24, 0.5));
             this.textEffects.push(new TextEffect(enemy.x + 16, enemy.y - 4, '+100', COLORS.TEXT_SCORE, 18, 0.6));
@@ -445,6 +476,9 @@ export class Game {
             this.state.health--;
             player.setInvulnerable(CONFIG.COMBAT.INVULNERABILITY_DURATION);
 
+            // Play damaged sound
+            this.audioManager.play('damaged');
+
             // Damage particles (10 red sparkles from player center)
             this.particleSystem.emitRadial(player.x + 16, player.y + 16, 10, COLORS.PARTICLE_DAMAGE, 150, 0.3);
 
@@ -461,11 +495,14 @@ export class Game {
             // Check game over
             if (this.state.health <= 0) {
                 this.state.gameOver = true;
+                this.audioManager.play('gameOver');
                 console.log('Game Over!');
             }
 
         } else {
             // Draw - both bounce back
+            this.audioManager.play('clash');
+
             this.textEffects.push(new TextEffect(collisionX, collisionY, 'CLASH!', COLORS.TEXT_CLASH, 18, 0.3));
 
             // Collision sparks (5 white particles)
@@ -496,10 +533,16 @@ export class Game {
         ));
 
         if (result.type === 'coin') {
+            // Play coin pickup sound
+            this.audioManager.play('pickupCoin');
+
             // Add points
             this.state.score += result.points;
             console.log(`Coin collected! +${result.points} points. Total: ${this.state.score}`);
         } else if (result.type === 'orb') {
+            // Play orb pickup sound
+            this.audioManager.play('pickupOrb');
+
             // Increment orbs collected
             this.state.orbsCollected++;
             console.log(`Orb collected! (${this.state.orbsCollected}/3)`);
@@ -524,6 +567,9 @@ export class Game {
         this.state.health--;
         this.player.setInvulnerable(CONFIG.COMBAT.RESPAWN_INVULNERABILITY);
 
+        // Play damaged sound
+        this.audioManager.play('damaged');
+
         console.log(`Hazard damage! Health: ${this.state.health}`);
 
         // Respawn at spawn point
@@ -535,11 +581,15 @@ export class Game {
         // Check game over
         if (this.state.health <= 0) {
             this.state.gameOver = true;
+            this.audioManager.play('gameOver');
             console.log('Game Over!');
         }
     }
 
     handleLevelComplete() {
+        // Play level complete sound
+        this.audioManager.play('levelComplete');
+
         // Calculate bonus points
         const timeBonus = 0; // Could add time tracking
         const healthBonus = this.state.health * 50;

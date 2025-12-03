@@ -2,9 +2,11 @@
 
 import { Entity } from './Entity.js';
 import { CONFIG, COLORS } from '../config.js';
+import { PlayerFace } from './PlayerFace.js';
+import { PlayerLimbs } from './PlayerLimbs.js';
 
 export class Player extends Entity {
-    constructor(x, y, particleSystem) {
+    constructor(x, y, particleSystem, audioManager) {
         super(x, y, CONFIG.PLAYER.SIZE, CONFIG.PLAYER.SIZE);
         this.shape = CONFIG.PLAYER.START_SHAPE; // Starting shape: 'circle', 'square', or 'triangle'
         this.color = CONFIG.PLAYER.COLOR; // Blue
@@ -13,6 +15,7 @@ export class Player extends Entity {
         this.invulnerable = false;
         this.invulnerabilityTimer = 0;
         this.particleSystem = particleSystem; // Reference to particle system
+        this.audioManager = audioManager; // Reference to audio manager
 
         // Enhanced jump mechanics properties
         this.jumping = false;              // For variable jump height
@@ -20,6 +23,10 @@ export class Player extends Entity {
         this.coyoteTimer = 0;              // For coyote time
         this.wasOnGround = false;          // For coyote time
         this.jumpBufferTimer = 0;          // For jump buffer
+
+        // Visual features
+        this.face = new PlayerFace(this);
+        this.limbs = new PlayerLimbs(this);
     }
 
     cycleShapeForward() {
@@ -50,6 +57,10 @@ export class Player extends Entity {
 
     update(deltaTime, input) {
         // Note: Don't call updateBase() here - let collision system manage onGround state
+
+        // Update visual features
+        this.face.update(deltaTime);
+        this.limbs.update(deltaTime);
 
         // Shape morphing (Q and E keys)
         if (input.isKeyPressed('q')) {
@@ -137,6 +148,12 @@ export class Player extends Entity {
             this.jumpBufferTimer = 0;
             this.coyoteTimer = 0;
             this.wasOnGround = false;
+
+            // Play jump sound
+            if (this.audioManager) {
+                this.audioManager.play('jump');
+            }
+
             console.log(`[JUMP DEBUG] ✓ JUMP STARTED! velocityY: ${this.velocityY}`);
         }
 
@@ -198,17 +215,24 @@ export class Player extends Entity {
             ctx.globalAlpha = 0.5;
         }
 
-        ctx.fillStyle = this.color;
+        // Draw limbs behind body
+        this.limbs.draw(ctx);
 
-        // Render based on current shape
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+
+        // Render body based on current shape
         if (this.shape === 'circle') {
             // Draw circle
             ctx.beginPath();
             ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, 0, Math.PI * 2);
             ctx.fill();
+            ctx.stroke();
         } else if (this.shape === 'square') {
             // Draw square
             ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
         } else if (this.shape === 'triangle') {
             // Draw triangle (pointing up)
             ctx.beginPath();
@@ -217,7 +241,14 @@ export class Player extends Entity {
             ctx.lineTo(this.x, this.y + this.height); // Bottom left
             ctx.closePath();
             ctx.fill();
+            ctx.stroke();
         }
+
+        // Draw face on top of body
+        this.face.draw(ctx);
+
+        // Draw legs in front
+        this.limbs.drawAfter(ctx);
 
         ctx.restore();
     }

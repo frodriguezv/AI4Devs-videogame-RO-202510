@@ -34,12 +34,29 @@ export const CONFIG = {
     // Enemy settings
     ENEMY: {
         SIZE: 32,
-        COLOR: '#E24A4A',
+        COLOR: '#E24A4A', // Default color (deprecated, use specific colors below)
         PATROL_RANGE: 200,
         SPEEDS: {
-            CIRCLE: 60,
-            SQUARE: 50,
-            TRIANGLE: 70
+            CIRCLE: 150,   // Fastest - horizontal only
+            SQUARE: 100,   // Medium - can fly in 2D
+            TRIANGLE: 80   // Normal - with random jumps
+        },
+        COLORS: {
+            SQUARE: '#FF6B6B',   // Red/Crimson - Flying enemy
+            CIRCLE: '#4ECDC4',   // Teal/Cyan - Fast ground enemy
+            TRIANGLE: '#FFE66D'  // Yellow - Jumping enemy
+        },
+        // Flying enemy (Square) properties
+        SQUARE_FLY: {
+            CHASE_SPEED: 100,
+            DETECTION_RANGE: 300
+        },
+        // Jumping enemy (Triangle) properties
+        TRIANGLE_JUMP: {
+            MIN_JUMP_INTERVAL: 1000,  // 1 second minimum between jumps
+            MAX_JUMP_INTERVAL: 2500,  // 2.5 seconds maximum between jumps
+            MIN_JUMP_FORCE: -240,     // Small hop (about 38% of player jump)
+            MAX_JUMP_FORCE: -378      // Max jump is 60% of player jump height
         }
     },
 
