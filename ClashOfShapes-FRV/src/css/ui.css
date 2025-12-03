@@ -1,0 +1,13 @@
+/* UI/HUD Styles */
+
+/* This file is for future UI styling if needed */
+/* Most UI rendering happens on canvas, but we can add CSS for HTML overlays here */
+
+.overlay-screen {
+    font-family: 'Arial', sans-serif;
+}
+
+/* Pause screen styles (if needed) */
+.pause-overlay {
+    background: rgba(0, 0, 0, 0.5);
+}
