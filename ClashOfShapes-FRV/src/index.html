@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Shifter - Rock Paper Scissors Platformer</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="ui" width="800" height="600"></canvas>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="overlay-screen">
+            <div class="screen-content">
+                <h1>Game Over</h1>
+                <p>Final Score: <span id="finalScore">0</span></p>
+                <button id="restartButton" class="game-button">Restart</button>
+            </div>
+        </div>
+
+        <!-- Level Complete Screen -->
+        <div id="levelCompleteScreen" class="overlay-screen">
+            <div class="screen-content">
+                <h1>Level Complete!</h1>
+                <p>Final Score: <span id="completeScore">0</span></p>
+                <button id="playAgainButton" class="game-button">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules (ES6 modules) -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
