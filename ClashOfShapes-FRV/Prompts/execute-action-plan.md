@@ -265,7 +265,7 @@ A professional game project with:
 ---
 
 ## Important Notes
-- **Stay organized**: Keep code well-structured even in a single file
+- **Stay organized**: Keep code well-structured
 - **Test frequently**: Catch bugs early
 - **Document thoroughly**: Future you will thank you
 - **Follow the plan**: Trust the phase sequence
